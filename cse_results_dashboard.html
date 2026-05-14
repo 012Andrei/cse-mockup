@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSE Mock Test — Results Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f3ef;
+    --surface: #ffffff;
+    --surface2: #f0ede8;
+    --border: #d8d4cc;
+    --border2: #c5c0b5;
+    --text: #1a1815;
+    --text2: #5a5650;
+    --text3: #9a9590;
+    --accent: #1a6b45;
+    --accent-bg: #e8f5ee;
+    --accent-text: #0f4a2f;
+    --danger: #c0392b;
+    --danger-bg: #fdf0ee;
+    --amber: #b8750a;
+    --amber-bg: #fdf6e3;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.6; }
+
+  .site-header {
+    background: var(--text); color: #fff;
+    padding: 0.6rem 1.5rem;
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.06em;
+  }
+  .site-header span { opacity: 0.5; }
+
+  .page { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+  .dash-title {
+    font-family: var(--mono); font-size: 24px; font-weight: 500;
+    letter-spacing: -0.02em; margin: 2rem 0 0.4rem;
+  }
+  .dash-sub { font-size: 14px; color: var(--text2); margin-bottom: 2rem; }
+
+  /* summary cards */
+  .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr)); gap: 10px; margin-bottom: 2rem; }
+  .sum-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px;
+  }
+  .sum-label { font-size: 11px; color: var(--text3); font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+  .sum-val { font-size: 26px; font-weight: 600; font-family: var(--mono); color: var(--text); }
+  .sum-val.pass { color: var(--accent); }
+  .sum-val.fail { color: var(--danger); }
+
+  /* controls row */
+  .controls-row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:1.25rem; }
+  .search-input {
+    padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px;
+    font-family: var(--sans); font-size: 14px; background: var(--surface); color: var(--text);
+    outline: none; flex: 1; min-width: 180px; max-width: 300px;
+  }
+  .search-input:focus { border-color: var(--border2); }
+  .filter-btn {
+    padding: 8px 14px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--surface); font-family: var(--mono); font-size: 12px; color: var(--text2);
+    cursor: pointer; transition: all 0.12s;
+  }
+  .filter-btn:hover { background: var(--surface2); }
+  .filter-btn.active { background: var(--text); color: #fff; border-color: var(--text); }
+  .refresh-btn {
+    padding: 8px 14px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--surface); font-family: var(--mono); font-size: 12px; color: var(--text2);
+    cursor: pointer; transition: all 0.12s; margin-left: auto;
+  }
+  .refresh-btn:hover { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+
+  /* table */
+  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 1.5rem; }
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--text3); text-align: left; padding: 10px 14px;
+    border-bottom: 1px solid var(--border); background: var(--surface2); white-space: nowrap;
+    cursor: pointer; user-select: none;
+  }
+  th:hover { color: var(--text2); }
+  th .sort-arrow { margin-left: 4px; opacity: 0.4; }
+  th.sorted .sort-arrow { opacity: 1; }
+  td {
+    padding: 11px 14px; border-bottom: 1px solid var(--border);
+    font-size: 13px; color: var(--text2); vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--surface2); }
+
+  .taker-name { font-weight: 600; color: var(--text); font-size: 14px; }
+  .score-badge {
+    display: inline-block; font-family: var(--mono); font-size: 13px; font-weight: 500;
+    padding: 2px 8px; border-radius: 4px;
+  }
+  .score-pass { background: var(--accent-bg); color: var(--accent-text); }
+  .score-fail { background: var(--danger-bg); color: var(--danger); }
+  .status-pill {
+    display: inline-block; font-family: var(--mono); font-size: 10px; text-transform: uppercase;
+    letter-spacing: 0.06em; padding: 2px 7px; border-radius: 20px; font-weight: 500;
+  }
+  .pill-pass { background: var(--accent-bg); color: var(--accent-text); }
+  .pill-fail { background: var(--danger-bg); color: var(--danger); }
+
+  .sec-mini { display:flex; flex-direction:column; gap:3px; min-width:160px; }
+  .sec-mini-row { display:flex; align-items:center; gap:5px; font-size:11px; }
+  .sec-mini-label { color:var(--text3); width:90px; flex-shrink:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .sec-mini-bar { flex:1; height:4px; background:var(--surface2); border-radius:2px; }
+  .sec-mini-fill { height:4px; border-radius:2px; }
+  .sec-mini-pct { font-family:var(--mono); font-size:10px; color:var(--text3); width:28px; text-align:right; }
+
+  .time-val { font-family: var(--mono); font-size: 12px; }
+  .date-val { font-size: 12px; color: var(--text3); }
+
+  /* expand row */
+  .expand-row td { background: var(--surface2); padding: 14px 16px; }
+
+  /* empty state */
+  .empty-state { text-align:center; padding: 4rem 2rem; }
+  .empty-icon { font-size: 40px; margin-bottom: 1rem; }
+  .empty-title { font-family: var(--mono); font-size: 16px; margin-bottom: 6px; }
+  .empty-sub { font-size: 13px; color: var(--text3); }
+
+  /* loading */
+  .loading { text-align:center; padding:3rem; font-family:var(--mono); font-size:13px; color:var(--text3); }
+
+  .btn-sm {
+    padding: 5px 10px; border-radius: 5px; border: 1px solid var(--border);
+    background: var(--surface); font-size: 12px; cursor: pointer; color: var(--text2);
+    font-family: var(--mono); transition: all 0.12s;
+  }
+  .btn-sm:hover { background: var(--surface2); }
+  .btn-danger-sm { color: var(--danger); border-color: #e8c0bc; }
+  .btn-danger-sm:hover { background: var(--danger-bg); }
+
+  .pagination { display:flex; align-items:center; gap:8px; font-family:var(--mono); font-size:12px; color:var(--text3); }
+  .page-btn { padding:5px 10px; border:1px solid var(--border); border-radius:5px; background:var(--surface); cursor:pointer; font-family:var(--mono); font-size:12px; color:var(--text2); }
+  .page-btn:hover { background:var(--surface2); }
+  .page-btn:disabled { opacity:0.4; cursor:default; }
+
+  @media(max-width:700px) {
+    .sec-mini, .expand-col { display:none; }
+    .date-val { display:none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="site-header">
+  <span>CIVIL SERVICE COMMISSION — PHILIPPINES</span>
+  <span>ADMIN DASHBOARD</span>
+</div>
+
+<div class="page">
+  <div class="dash-title">Exam Results Dashboard</div>
+  <p class="dash-sub">All exam takers and their scores — updates in real time as exams are submitted.</p>
+
+  <div class="summary-grid" id="summary-grid">
+    <div class="sum-card"><div class="sum-label">Total Takers</div><div class="sum-val" id="s-total">—</div></div>
+    <div class="sum-card"><div class="sum-label">Passed</div><div class="sum-val pass" id="s-passed">—</div></div>
+    <div class="sum-card"><div class="sum-label">Failed</div><div class="sum-val fail" id="s-failed">—</div></div>
+    <div class="sum-card"><div class="sum-label">Pass Rate</div><div class="sum-val" id="s-rate">—</div></div>
+    <div class="sum-card"><div class="sum-label">Avg Score</div><div class="sum-val" id="s-avg">—</div></div>
+    <div class="sum-card"><div class="sum-label">Highest</div><div class="sum-val pass" id="s-high">—</div></div>
+  </div>
+
+  <div class="controls-row">
+    <input class="search-input" id="search-box" type="text" placeholder="Search by name..." oninput="renderTable()">
+    <button class="filter-btn active" id="f-all" onclick="setFilter('all',this)">All</button>
+    <button class="filter-btn" id="f-pass" onclick="setFilter('pass',this)">Passed</button>
+    <button class="filter-btn" id="f-fail" onclick="setFilter('fail',this)">Failed</button>
+    <button class="refresh-btn" onclick="loadData()">⟳ Refresh</button>
+    <button class="btn-sm btn-danger-sm" onclick="clearAllData()">🗑 Clear All</button>
+  </div>
+
+  <div class="table-wrap">
+    <div id="table-container"><div class="loading">Loading results…</div></div>
+  </div>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+    <div class="pagination" id="pagination"></div>
+    <div style="font-size:12px;color:var(--text3);font-family:var(--mono);" id="count-label"></div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG: same URL as in index.html ──
+const SHEET_URL = 'https://script.google.com/macros/s/AKfycbxI9iwhxXDJzLwTazD7A62lCmUW-vO2m8MmID-9uwcFOCdgi89NtLyGc7zHr6tpkTqN/exec';
+
+let allResults = [];
+let filterMode = 'all';
+let sortCol = 'date';
+let sortDir = -1;
+let currentPage = 1;
+const PAGE_SIZE = 20;
+
+const SEC_COLORS = {
+  'Numerical Reasoning': '#1a6b45',
+  'Verbal Reasoning': '#1a5a8b',
+  'Analytical Ability': '#7a3a9a',
+  'General Information': '#b8750a',
+  'RA 6713 / CS Laws': '#c0392b'
+};
+
+async function loadData() {
+  document.getElementById('table-container').innerHTML = '<div class="loading">Loading results…</div>';
+  if (!SHEET_URL || SHEET_URL === 'YOUR_APPS_SCRIPT_URL_HERE') {
+    document.getElementById('table-container').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">⚙️</div>
+        <div class="empty-title">Google Sheets not configured</div>
+        <div class="empty-sub">Paste your Apps Script Web App URL into <code>SHEET_URL</code> in both HTML files.</div>
+      </div>`;
+    return;
+  }
+  try {
+    const res = await fetch(SHEET_URL + '?action=get');
+    const json = await res.json();
+    allResults = Array.isArray(json) ? json : [];
+  } catch(e) {
+    allResults = [];
+    document.getElementById('table-container').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">⚠️</div>
+        <div class="empty-title">Could not load results</div>
+        <div class="empty-sub">Check that your SHEET_URL is correct and the Apps Script is deployed as "Anyone" access.</div>
+      </div>`;
+    return;
+  }
+  updateSummary();
+  renderTable();
+}
+
+async function deleteResult(id) {
+  if (!confirm('Remove this result?')) return;
+  try {
+    await fetch(SHEET_URL + '?action=delete&id=' + id);
+    await loadData();
+  } catch(e) { alert('Could not delete. Check your Apps Script URL.'); }
+}
+
+async function clearAllData() {
+  if (!confirm('Delete ALL exam results? This cannot be undone.')) return;
+  try {
+    await fetch(SHEET_URL + '?action=clear');
+    allResults = [];
+    updateSummary();
+    renderTable();
+  } catch(e) { alert('Could not clear. Check your Apps Script URL.'); }
+}
+
+function updateSummary() {
+  const total = allResults.length;
+  const passed = allResults.filter(r => r.passed).length;
+  const failed = total - passed;
+  const rate = total ? Math.round(passed / total * 100) : 0;
+  const avg = total ? Math.round(allResults.reduce((s,r) => s + r.score, 0) / total) : 0;
+  const high = total ? Math.max(...allResults.map(r => r.score)) : 0;
+
+  document.getElementById('s-total').textContent = total;
+  document.getElementById('s-passed').textContent = passed;
+  document.getElementById('s-failed').textContent = failed;
+  document.getElementById('s-rate').textContent = total ? rate + '%' : '—';
+  document.getElementById('s-avg').textContent = total ? avg + '%' : '—';
+  document.getElementById('s-high').textContent = total ? high + '%' : '—';
+}
+
+function setFilter(mode, btn) {
+  filterMode = mode;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentPage = 1;
+  renderTable();
+}
+
+function setSort(col) {
+  if (sortCol === col) sortDir *= -1;
+  else { sortCol = col; sortDir = -1; }
+  renderTable();
+}
+
+function getFiltered() {
+  const q = document.getElementById('search-box').value.toLowerCase();
+  return allResults.filter(r => {
+    const nameMatch = r.name.toLowerCase().includes(q);
+    const filterMatch = filterMode === 'all' || (filterMode === 'pass' && r.passed) || (filterMode === 'fail' && !r.passed);
+    return nameMatch && filterMatch;
+  });
+}
+
+function getSorted(list) {
+  return [...list].sort((a, b) => {
+    let va, vb;
+    if (sortCol === 'date') { va = a.date; vb = b.date; }
+    else if (sortCol === 'name') { va = a.name.toLowerCase(); vb = b.name.toLowerCase(); }
+    else if (sortCol === 'score') { va = a.score; vb = b.score; }
+    else if (sortCol === 'questions') { va = a.numQuestions; vb = b.numQuestions; }
+    else if (sortCol === 'time') { va = a.timeTakenSec; vb = b.timeTakenSec; }
+    if (va < vb) return -1 * sortDir;
+    if (va > vb) return 1 * sortDir;
+    return 0;
+  });
+}
+
+function fmtDate(iso) {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString('en-PH', { month:'short', day:'numeric', year:'numeric' })
+      + ' ' + d.toLocaleTimeString('en-PH', { hour:'2-digit', minute:'2-digit' });
+  } catch { return iso; }
+}
+
+function fmtTime(sec) {
+  if (!sec) return '—';
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return m + 'm ' + String(s).padStart(2,'0') + 's';
+}
+
+function sortArrow(col) {
+  if (sortCol !== col) return '<span class="sort-arrow">↕</span>';
+  return `<span class="sort-arrow">${sortDir === -1 ? '↓' : '↑'}</span>`;
+}
+
+function renderTable() {
+  const filtered = getFiltered();
+  const sorted = getSorted(filtered);
+  const total = sorted.length;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  if (currentPage > totalPages) currentPage = 1;
+  const page = sorted.slice((currentPage-1)*PAGE_SIZE, currentPage*PAGE_SIZE);
+
+  document.getElementById('count-label').textContent = `Showing ${Math.min(total, (currentPage-1)*PAGE_SIZE+1)}–${Math.min(total, currentPage*PAGE_SIZE)} of ${total} record${total !== 1 ? 's' : ''}`;
+
+  // Pagination
+  const pag = document.getElementById('pagination');
+  if (totalPages > 1) {
+    pag.innerHTML = `
+      <button class="page-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>← Prev</button>
+      <span>Page ${currentPage} of ${totalPages}</span>
+      <button class="page-btn" onclick="goPage(${currentPage+1})" ${currentPage===totalPages?'disabled':''}>Next →</button>`;
+  } else { pag.innerHTML = ''; }
+
+  if (total === 0) {
+    document.getElementById('table-container').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📋</div>
+        <div class="empty-title">${allResults.length === 0 ? 'No exams taken yet' : 'No results match your filter'}</div>
+        <div class="empty-sub">${allResults.length === 0 ? 'Results will appear here once someone completes the mock exam.' : 'Try adjusting your search or filter.'}</div>
+      </div>`;
+    return;
+  }
+
+  const thClass = col => `onclick="setSort('${col}')" class="${sortCol===col?'sorted':''}"`;
+
+  const rows = page.map((r, idx) => {
+    const scoreClass = r.passed ? 'score-pass' : 'score-fail';
+    const pillClass = r.passed ? 'pill-pass' : 'pill-fail';
+
+    // Section mini-bars
+    const secHtml = r.sections ? Object.entries(r.sections).map(([sec, data]) => {
+      const pct = Math.round(data.correct / data.total * 100);
+      const color = pct >= 80 ? '#1a6b45' : pct >= 60 ? '#b8750a' : '#c0392b';
+      const shortName = sec.replace('Numerical Reasoning','Numerical').replace('Verbal Reasoning','Verbal')
+        .replace('Analytical Ability','Analytical').replace('General Information','Gen. Info').replace('RA 6713 / CS Laws','CS Laws');
+      return `<div class="sec-mini-row">
+        <span class="sec-mini-label" title="${sec}">${shortName}</span>
+        <div class="sec-mini-bar"><div class="sec-mini-fill" style="width:${pct}%;background:${color}"></div></div>
+        <span class="sec-mini-pct">${pct}%</span>
+      </div>`;
+    }).join('') : '—';
+
+    return `<tr>
+      <td><div class="taker-name">${escHtml(r.name)}</div><div class="date-val">${fmtDate(r.date)}</div></td>
+      <td><span class="score-badge ${scoreClass}">${r.score}%</span></td>
+      <td><span class="status-pill ${pillClass}">${r.passed ? 'Passed' : 'Failed'}</span></td>
+      <td style="font-family:var(--mono);font-size:13px;">${r.correct} / ${r.numQuestions}</td>
+      <td style="font-family:var(--mono);font-size:12px;color:var(--text3);">${r.wrong ?? '—'} / ${r.skipped ?? '—'}</td>
+      <td class="time-val">${fmtTime(r.timeTakenSec)}</td>
+      <td class="expand-col"><div class="sec-mini">${secHtml}</div></td>
+      <td><button class="btn-sm btn-danger-sm" onclick="deleteResult(${r.id})">✕</button></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('table-container').innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th ${thClass('name')}>Name / Date ${sortArrow('name')}</th>
+          <th ${thClass('score')}>Score ${sortArrow('score')}</th>
+          <th>Status</th>
+          <th ${thClass('questions')}>Correct ${sortArrow('questions')}</th>
+          <th>Wrong / Skipped</th>
+          <th ${thClass('time')}>Time Taken ${sortArrow('time')}</th>
+          <th class="expand-col">Subject Breakdown</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function goPage(p) {
+  currentPage = p;
+  renderTable();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Auto-refresh every 30 seconds
+setInterval(loadData, 30000);
+loadData();
+</script>
+</body>
+</html>
